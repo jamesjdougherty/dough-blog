@@ -30,8 +30,8 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 
 ***Commands***
 
-Run `Firebase emulators:start` to run testing environment
-
 Run `ng build` prior to deploying to Firebase
+
+Run `Firebase emulators:start` to run testing environment
 
 Run `Firebase deploy` to push app to Firebase hosting
