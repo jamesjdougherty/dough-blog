@@ -1,6 +1,9 @@
 h1 {
   margin: 1em;
   font-variant-caps: small-caps;
+}
+
+h2 {
   text-decoration: underline;
 }
 
