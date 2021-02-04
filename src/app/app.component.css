@@ -1,31 +1,22 @@
-h2 {
+h1 {
+  margin: 1em;
+  font-variant-caps: small-caps;
   text-decoration: underline;
 }
 
-.entry {
-  margin: 15px auto;
-  padding: 10px;
-  border: dashed 1px slategrey;
+.mat-card {
+  margin: 2em;
+  padding: 2.5em;
+  background-color: whitesmoke;
 }
 
+.mat-card-title {
+  font-weight: bolder;
+  font-family: cursive;
+}
 
-@media (min-width: 770px) {
-  p {
-    margin: .5em auto;
-    padding: .5em;
-    text-indent: .75in;
-    font-size: 1.25rem;
-    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-    text-align: justify;
-  }
-  
-  .journal {
-    margin: 1em 0;
-  }
-  
-  .entry {
-    margin: 25px auto;
-    padding: 50px;
-    border: dashed 2px slategrey;
-  }
+.mat-card-content {
+  letter-spacing: 1px;
+  font-size: 18px;
+  font-family: cursive;
 }
