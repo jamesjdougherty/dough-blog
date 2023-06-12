@@ -1,7 +1,35 @@
-<h1>Dough Dev</h1>
-
 <div>
-  <app-blog></app-blog>
+  <div class="container">
+    <!-- start of nav-container -->
+    <header class="d-flex justify-content-between flex-wrap">
+      <div>
+        <h1>Dough Dev</h1>
+      </div>
+      <div class="topnav">
+        <i>
+          <a
+            class="fab fa-github"
+            href="https://github.com/jamesjdougherty"
+            target="_blank"
+            alt="James Dougherty's Github"
+          ></a>
+        </i>
+        <i style="margin: 0 1em;">
+          <a
+            class="fab fa-twitter"
+            href="https://twitter.com/jamesjdough/"
+            target="_blank"
+            alt="James Dougherty's Twitter"
+          ></a>
+        </i>
+      </div>
+    </header>
+    <!-- end of nav-container -->
+  </div>
+
+  <div class="container">
+    <app-blog></app-blog>
+  </div>
 </div>
 
 <router-outlet></router-outlet>

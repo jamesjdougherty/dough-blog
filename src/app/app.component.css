@@ -1,0 +1,15 @@
+.topnav {
+  margin: auto 1em;
+}
+
+.topnav a {
+  padding: 3px;
+  color: purple;
+  text-decoration: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.topnav .icon {
+  display: inline-block;
+}
