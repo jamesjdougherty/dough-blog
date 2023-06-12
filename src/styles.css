@@ -1,25 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
 
+.app {
+  background-color: gainsboro;
+}
+
 h1 {
   margin: 1em;
   font-variant-caps: small-caps;
-}
-
-.mat-card {
-  margin: 2em;
-  background-color: whitesmoke;
-}
-
-.mat-card-title {
-  font-weight: bolder;
-}
-
-.mat-card-content {
-  font-size: 16px;
-}
-
-@media (min-width: 1024px) {
-  .mat-card {
-    margin: 3em 10em;
-  }
 }
