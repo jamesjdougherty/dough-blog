@@ -11,11 +11,11 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "~13.4.0",
+    "@angular/animations": "~14.3.0",
     "@angular/cdk": "^21.0.5",
     "@angular/common": "^21.0.6",
     "@angular/compiler": "^21.0.6",
-    "@angular/core": "~13.4.0",
+    "@angular/core": "~14.3.0",
     "@angular/fire": "^20.0.1",
     "@angular/forms": "^21.0.6",
     "@angular/material": "^21.0.5",
