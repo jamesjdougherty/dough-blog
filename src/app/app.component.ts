@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { BlogComponent } from './blog/blog.component';
@@ -8,6 +8,7 @@ import { BlogComponent } from './blog/blog.component';
   standalone: true,
   imports: [RouterOutlet, MatCardModule, BlogComponent],
   templateUrl: './app.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
