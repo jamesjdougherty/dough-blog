@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/dough-blog",
+    "public": "dist/dough-blog/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
