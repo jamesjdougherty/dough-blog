@@ -13,3 +13,11 @@
 .topnav .icon {
   display: inline-block;
 }
+
+footer {
+  margin-top: 2em;
+  padding: 1em 0;
+  color: gray;
+  font-size: 0.85em;
+  text-align: center;
+}
