@@ -14,7 +14,7 @@ export const POSTS: Post[] = [
     date: '2026-08-29',
     tags: ['AI', 'Musings'],
     body: [
-      "Well well well ... look who's back after three years to check-in and talk about about DEV.",
+      "Well well well ... look who's back after three years to check-in and talk about DEV.",
       'Things are a little different these days in the realm of DEV/CODING/AI. By a little different I mean ... a completely and totally different world.',
       'Check back later for more ... 🚧'
     ]
