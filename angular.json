@@ -37,6 +37,7 @@
             "scripts": [],
             "browser": "src/main.ts"
           },
+          "defaultConfiguration": "production",
           "configurations": {
             "production": {
               "fileReplacements": [
@@ -62,17 +63,27 @@
                   "maximumError": "10kb"
                 }
               ]
+            },
+            "development": {
+              "optimization": false,
+              "outputHashing": "none",
+              "sourceMap": true,
+              "extractLicenses": false
             }
           }
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "defaultConfiguration": "development",
           "options": {
             "buildTarget": "dough-blog:build"
           },
           "configurations": {
             "production": {
               "buildTarget": "dough-blog:build:production"
+            },
+            "development": {
+              "buildTarget": "dough-blog:build:development"
             }
           }
         },
