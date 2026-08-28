@@ -65,11 +65,11 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "dough-blog:build"
+            "buildTarget": "dough-blog:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "dough-blog:build:production"
+              "buildTarget": "dough-blog:build:production"
             }
           }
         },
