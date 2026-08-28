@@ -1,10 +1,142 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global design tokens, reset and base typography for Dough Dev. */
 
-.app {
-  background-color: gainsboro;
+:root {
+  color-scheme: light;
+
+  /* Warm, paper-like light palette. */
+  --bg: #f7f3ec;
+  --bg-elevated: #fffdf9;
+  --bg-subtle: #efe8dc;
+  --border: #e0d6c6;
+  --border-strong: #cdbfa8;
+  --text: #241f1a;
+  --text-muted: #6d6156;
+  --accent: #b4541b;
+  --accent-soft: #f6e4d6;
+  --accent-contrast: #ffffff;
+  --shadow: 0 1px 2px rgb(60 40 20 / 6%), 0 8px 24px rgb(60 40 20 / 6%);
+  --shadow-lifted: 0 2px 4px rgb(60 40 20 / 8%), 0 16px 40px rgb(60 40 20 / 10%);
+
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --measure: 68ch;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-serif: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
 }
 
-h1 {
-  margin: 1em;
-  font-variant-caps: small-caps;
+/* Dark tokens apply when the OS asks for dark and the reader has not overridden it,
+   or when the reader explicitly picks dark. Plain CSS has no mixins, so the block
+   is repeated verbatim for both selectors. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: #16130f;
+    --bg-elevated: #201b16;
+    --bg-subtle: #2a231c;
+    --border: #352d24;
+    --border-strong: #4a3f33;
+    --text: #f0e9df;
+    --text-muted: #a9998a;
+    --accent: #f0904f;
+    --accent-soft: #37241a;
+    --accent-contrast: #1a130d;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 30%);
+    --shadow-lifted: 0 2px 4px rgb(0 0 0 / 35%), 0 16px 40px rgb(0 0 0 / 45%);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #16130f;
+  --bg-elevated: #201b16;
+  --bg-subtle: #2a231c;
+  --border: #352d24;
+  --border-strong: #4a3f33;
+  --text: #f0e9df;
+  --text-muted: #a9998a;
+  --accent: #f0904f;
+  --accent-soft: #37241a;
+  --accent-contrast: #1a130d;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 30%);
+  --shadow-lifted: 0 2px 4px rgb(0 0 0 / 35%), 0 16px 40px rgb(0 0 0 / 45%);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(60rem 30rem at 15% -8%, var(--accent-soft), transparent 65%),
+    radial-gradient(50rem 26rem at 92% 4%, var(--bg-subtle), transparent 60%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 1.1em;
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
