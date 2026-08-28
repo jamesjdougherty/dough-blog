@@ -6,6 +6,8 @@ name: Deploy to Firebase Hosting on merge
   push:
     branches:
       - master
+  # Allows deploying the current master on demand, without an empty commit.
+  workflow_dispatch:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
