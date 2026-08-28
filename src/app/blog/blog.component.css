@@ -1,18 +1,19 @@
-.mat-card {
+.mat-mdc-card {
   margin: 2em;
   background-color: whitesmoke;
 }
 
-.mat-card-title {
+.mat-mdc-card-title {
   font-weight: bolder;
+  padding: 1em 1em 0.5em;
 }
 
-.mat-card-content {
+.mat-mdc-card-content {
   font-size: 16px;
 }
 
 @media (min-width: 1024px) {
-  .mat-card {
+  .mat-mdc-card {
     margin: 3em 10em;
   }
 }
