@@ -32,6 +32,15 @@
         ]
       },
       {
+        "source": "/admin{,/**}",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
         "source": "**/*.@(woff|woff2|eot|ttf|otf|png|jpg|jpeg|gif|svg|ico|webp)",
         "headers": [
           {
