@@ -33,6 +33,7 @@
               "src/icon-192.png",
               "src/icon-512.png",
               "src/apple-touch-icon.png",
+              "src/robots.txt",
               "src/assets"
             ],
             "styles": [
@@ -113,6 +114,7 @@
               "src/icon-192.png",
               "src/icon-512.png",
               "src/apple-touch-icon.png",
+              "src/robots.txt",
               "src/assets"
             ],
             "styles": [
