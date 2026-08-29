@@ -14,6 +14,18 @@ export const DRAFTS_DIR = 'drafts';
 
 const API = 'https://api.github.com';
 const TOKEN_KEY = 'dough-capture-token';
+const SAVED_AT_KEY = 'dough-capture-token-saved';
+
+/**
+ * How old a token has to be before the authoring pages mention it.
+ *
+ * This is a guess, and deliberately so. GitHub does send the real expiry date, as the
+ * `github-authentication-token-expiration` response header — but that header is not in
+ * the API's `Access-Control-Expose-Headers`, so the browser strips it before any of this
+ * code can read it. Age since this device saved the token is the only honest signal
+ * available without asking the author to type the date in by hand.
+ */
+export const TOKEN_STALE_DAYS = 60;
 
 export class GitHubError extends Error {
   constructor(
@@ -38,6 +50,7 @@ export function readToken(): string | null {
 export function writeToken(token: string): void {
   try {
     localStorage.setItem(TOKEN_KEY, token.trim());
+    localStorage.setItem(SAVED_AT_KEY, new Date().toISOString());
   } catch {
     /* Private mode; the token still applies for this page's lifetime. */
   }
@@ -46,9 +59,27 @@ export function writeToken(token: string): void {
 export function clearToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(SAVED_AT_KEY);
   } catch {
     /* Nothing to do. */
   }
+}
+
+/** Whole days since this device saved its token, or null if that is not knowable. */
+export function tokenAgeDays(): number | null {
+  let saved: string | null;
+  try {
+    saved = localStorage.getItem(SAVED_AT_KEY);
+  } catch {
+    return null;
+  }
+  if (!saved) {
+    return null;
+  }
+  const elapsed = Date.now() - Date.parse(saved);
+  return Number.isFinite(elapsed) && elapsed >= 0
+    ? Math.floor(elapsed / 86_400_000)
+    : null;
 }
 
 /* ---------- base64 that survives emoji ---------- */
@@ -92,6 +123,11 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
   });
 
   if (!response.ok) {
+    // An expired or revoked token fails every later call the same way, so drop it here
+    // and let the pages fall back to the paste screen instead of retrying with it.
+    if (response.status === 401) {
+      clearToken();
+    }
     throw new GitHubError(await describeFailure(response), response.status);
   }
   return response;
