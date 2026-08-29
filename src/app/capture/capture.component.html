@@ -44,6 +44,13 @@
         @if (queued() > 0) {
           <span class="pill">{{ queued() }} queued</span>
         }
+        @if (tokenStale()) {
+          <span
+            class="pill pill--warn"
+            title="Fine-grained tokens expire. If saving starts failing, paste a fresh one."
+            >Token {{ tokenAge() }}d old</span
+          >
+        }
         <button type="button" class="linkish" (click)="forgetToken()">Forget token</button>
       </div>
     </header>

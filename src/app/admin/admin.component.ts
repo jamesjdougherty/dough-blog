@@ -15,7 +15,15 @@ import {
   uniqueSlug,
   validateForPublish
 } from '../capture/drafts';
-import { GitHubError, checkAccess, clearToken, readToken, writeToken } from '../capture/github';
+import {
+  GitHubError,
+  TOKEN_STALE_DAYS,
+  checkAccess,
+  clearToken,
+  readToken,
+  tokenAgeDays,
+  writeToken
+} from '../capture/github';
 
 type View = 'list' | 'edit';
 type Status = { kind: 'idle' | 'working' | 'ok' | 'error'; text: string; href?: string };
@@ -34,6 +42,13 @@ export class AdminComponent {
   readonly hasToken = signal(readToken() !== null);
   readonly tokenInput = signal('');
   readonly checkingToken = signal(false);
+  readonly tokenAge = signal(tokenAgeDays());
+
+  /** Null age means a token saved before this was tracked; say nothing rather than guess. */
+  readonly tokenStale = computed(() => {
+    const age = this.tokenAge();
+    return age !== null && age >= TOKEN_STALE_DAYS;
+  });
 
   readonly view = signal<View>('list');
   readonly drafts = signal<Draft[]>([]);
@@ -102,6 +117,7 @@ export class AdminComponent {
     try {
       await checkAccess();
       this.hasToken.set(true);
+      this.tokenAge.set(tokenAgeDays());
       this.tokenInput.set('');
       await this.refresh();
     } catch (error) {
@@ -115,7 +131,20 @@ export class AdminComponent {
   forgetToken(): void {
     clearToken();
     this.hasToken.set(false);
+    this.tokenAge.set(null);
     this.drafts.set([]);
+  }
+
+  /**
+   * A dead token is only discovered mid-request, inside a call this page did not make
+   * directly, so re-read after any failure and fall back to the gate if it was dropped.
+   * Whatever is being edited stays in `editing`, and comes back when a new token is in.
+   */
+  private syncToken(): void {
+    if (readToken() === null) {
+      this.hasToken.set(false);
+      this.tokenAge.set(null);
+    }
   }
 
   /* ---------- list ---------- */
@@ -127,6 +156,7 @@ export class AdminComponent {
       this.status.set({ kind: 'idle', text: '' });
     } catch (error) {
       this.status.set({ kind: 'error', text: describe(error) });
+      this.syncToken();
     } finally {
       this.loadingDrafts.set(false);
     }
@@ -217,6 +247,7 @@ export class AdminComponent {
       this.status.set({ kind: 'ok', text: 'Draft saved.' });
     } catch (error) {
       this.status.set({ kind: 'error', text: describe(error) });
+      this.syncToken();
     }
   }
 
@@ -237,6 +268,7 @@ export class AdminComponent {
       await this.refresh();
     } catch (error) {
       this.status.set({ kind: 'error', text: describe(error) });
+      this.syncToken();
     }
   }
 
@@ -273,6 +305,7 @@ export class AdminComponent {
       await this.refresh();
     } catch (error) {
       this.status.set({ kind: 'error', text: describe(error) });
+      this.syncToken();
     }
   }
 }

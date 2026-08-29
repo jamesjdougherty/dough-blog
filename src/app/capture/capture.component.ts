@@ -14,7 +14,15 @@ import {
   uniqueSlug,
   validateForPublish
 } from './drafts';
-import { GitHubError, checkAccess, clearToken, readToken, writeToken } from './github';
+import {
+  GitHubError,
+  TOKEN_STALE_DAYS,
+  checkAccess,
+  clearToken,
+  readToken,
+  tokenAgeDays,
+  writeToken
+} from './github';
 
 type Status = { kind: 'idle' | 'working' | 'ok' | 'error'; text: string; href?: string };
 
@@ -32,6 +40,13 @@ export class CaptureComponent {
   readonly hasToken = signal(readToken() !== null);
   readonly tokenInput = signal('');
   readonly checkingToken = signal(false);
+  readonly tokenAge = signal(tokenAgeDays());
+
+  /** Null age means a token saved before this was tracked; say nothing rather than guess. */
+  readonly tokenStale = computed(() => {
+    const age = this.tokenAge();
+    return age !== null && age >= TOKEN_STALE_DAYS;
+  });
 
   readonly title = signal('');
   readonly body = signal(restoreBody());
@@ -96,6 +111,7 @@ export class CaptureComponent {
     try {
       await checkAccess();
       this.hasToken.set(true);
+      this.tokenAge.set(tokenAgeDays());
       this.tokenInput.set('');
       this.status.set({ kind: 'ok', text: 'Token saved on this device.' });
       void this.drainQueue();
@@ -110,7 +126,19 @@ export class CaptureComponent {
   forgetToken(): void {
     clearToken();
     this.hasToken.set(false);
+    this.tokenAge.set(null);
     this.status.set({ kind: 'idle', text: '' });
+  }
+
+  /**
+   * A dead token is only discovered mid-request, inside a call this page did not make
+   * directly, so re-read after any failure and fall back to the gate if it was dropped.
+   */
+  private syncToken(): void {
+    if (readToken() === null) {
+      this.hasToken.set(false);
+      this.tokenAge.set(null);
+    }
   }
 
   /* ---------- editing ---------- */
@@ -159,6 +187,7 @@ export class CaptureComponent {
         kind: 'error',
         text: `${describe(error)} Kept on this device and queued to retry.`
       });
+      this.syncToken();
     }
   }
 
@@ -175,6 +204,7 @@ export class CaptureComponent {
       });
     } catch (error) {
       this.status.set({ kind: 'error', text: describe(error) });
+      this.syncToken();
     }
   }
 
@@ -184,6 +214,7 @@ export class CaptureComponent {
     }
     const { sent, failed } = await flushQueue();
     this.queued.set(failed);
+    this.syncToken();
     if (sent > 0) {
       this.status.set({
         kind: 'ok',
