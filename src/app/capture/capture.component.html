@@ -1,0 +1,161 @@
+@if (!hasToken()) {
+  <section class="gate">
+    <h1>Capture</h1>
+    <p class="gate__lede">
+      Paste a fine-grained GitHub token with <strong>Contents: read and write</strong> on
+      <code>dough-blog</code> and <code>dough-blog-drafts</code>. It stays in this browser.
+    </p>
+    <label class="field">
+      <span class="field__label">Token</span>
+      <input
+        type="password"
+        inputmode="text"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        placeholder="github_pat_…"
+        [value]="tokenInput()"
+        (input)="tokenInput.set(value($event))"
+        (keydown.enter)="saveToken()"
+      />
+    </label>
+    <button
+      type="button"
+      class="btn btn--primary"
+      [disabled]="!tokenInput().trim() || checkingToken()"
+      (click)="saveToken()"
+    >
+      {{ checkingToken() ? 'Checking…' : 'Save token' }}
+    </button>
+
+    @if (status().kind === 'error') {
+      <p class="status status--error">{{ status().text }}</p>
+    }
+  </section>
+} @else {
+  <section class="composer">
+    <header class="bar">
+      <h1>Capture</h1>
+      <div class="bar__right">
+        @if (!online()) {
+          <span class="pill pill--warn">Offline</span>
+        }
+        @if (queued() > 0) {
+          <span class="pill">{{ queued() }} queued</span>
+        }
+        <button type="button" class="linkish" (click)="forgetToken()">Forget token</button>
+      </div>
+    </header>
+
+    <label class="field">
+      <span class="field__label">Title <em>— needed only to publish</em></span>
+      <input
+        type="text"
+        enterkeyhint="next"
+        [value]="title()"
+        (input)="title.set(value($event))"
+        placeholder="Untitled"
+      />
+    </label>
+
+    <label class="field field--grow">
+      <span class="field__label">Thought</span>
+      <textarea
+        [value]="body()"
+        (input)="updateBody(value($event))"
+        placeholder="Blank line starts a new paragraph."
+        autocapitalize="sentences"
+        autocorrect="on"
+        spellcheck="true"
+      ></textarea>
+    </label>
+
+    <p class="counts">
+      {{ wordCount() }} {{ wordCount() === 1 ? 'word' : 'words' }} ·
+      {{ paragraphCount() }} {{ paragraphCount() === 1 ? 'paragraph' : 'paragraphs' }}
+    </p>
+
+    <div class="tags">
+      <span class="field__label">Tags</span>
+      <div class="tags__row">
+        @for (tag of knownTags; track tag) {
+          <button
+            type="button"
+            class="chip"
+            [class.chip--on]="tags().includes(tag)"
+            [attr.aria-pressed]="tags().includes(tag)"
+            (click)="toggleTag(tag)"
+          >
+            {{ tag }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (status().kind !== 'idle') {
+      <p class="status" [class.status--error]="status().kind === 'error'">
+        {{ status().text }}
+        @if (status().href) {
+          <a [href]="status().href" target="_blank" rel="noopener noreferrer">Watch the build</a>
+        }
+      </p>
+    }
+
+    @if (confirming()) {
+      <div class="confirm">
+        <h2>Publish straight to the blog?</h2>
+        <p>This goes live with no preview and no undo.</p>
+
+        @if (publishProblems().length) {
+          <ul class="problems">
+            @for (problem of publishProblems(); track problem) {
+              <li>{{ problem }}</li>
+            }
+          </ul>
+        } @else {
+          <dl class="summary">
+            <div><dt>Link</dt><dd>/{{ slugPreview() }}</dd></div>
+            <div><dt>Date</dt><dd>{{ date() }}</dd></div>
+            <div><dt>Tags</dt><dd>{{ tags().join(', ') }}</dd></div>
+          </dl>
+        }
+
+        <div class="confirm__actions">
+          <button type="button" class="btn" (click)="confirming.set(false)">Back</button>
+          <button
+            type="button"
+            class="btn btn--danger"
+            [disabled]="publishProblems().length > 0 || status().kind === 'working'"
+            (click)="confirmPublish()"
+          >
+            Publish now
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="actions">
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canSave() || status().kind === 'working'"
+        (click)="save()"
+      >
+        Save draft
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [disabled]="!canSave() || !online() || confirming()"
+        (click)="confirming.set(true)"
+      >
+        Publish now
+      </button>
+    </div>
+
+    @if (!online()) {
+      <p class="hint">Publishing needs a connection. Saving a draft does not.</p>
+    }
+  </section>
+}

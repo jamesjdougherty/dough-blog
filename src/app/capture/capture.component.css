@@ -1,0 +1,260 @@
+:host {
+  display: block;
+  padding-bottom: 2rem;
+}
+
+h1 {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Inputs must be at least 16px or iOS zooms the viewport on focus. */
+input,
+textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.8rem;
+}
+
+textarea {
+  min-height: 45vh;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.field__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.field__label em {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.75;
+}
+
+/* ---- gate ---- */
+
+.gate__lede {
+  margin: 0.75rem 0 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* ---- composer ---- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.bar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pill {
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.pill--warn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.linkish {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.counts {
+  margin: -0.4rem 0 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.tags {
+  margin-bottom: 1.25rem;
+}
+
+.tags__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  /* 44px is Apple's minimum comfortable touch target; state it rather than
+     approximate it with padding that drifts when the font changes. */
+  min-height: 44px;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+/* ---- buttons ---- */
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.btn {
+  flex: 1;
+  min-height: 3rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn--danger {
+  background: #a8341c;
+  border-color: #a8341c;
+  color: #fff;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- status and confirm ---- */
+
+.status {
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  font-size: 0.88rem;
+}
+
+.status--error {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.status a {
+  margin-left: 0.4rem;
+}
+
+.confirm {
+  margin-bottom: 1.1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+}
+
+.confirm h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.confirm p {
+  margin: 0 0 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.problems {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  color: var(--accent);
+  font-size: 0.88rem;
+}
+
+.summary {
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+}
+
+.summary > div {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.summary dt {
+  flex: 0 0 3.5rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding-top: 0.15rem;
+}
+
+.summary dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.confirm__actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.hint {
+  margin: 0.8rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}

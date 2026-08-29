@@ -17,6 +17,10 @@ const WORDS_PER_MINUTE = 220;
   styleUrls: ['./blog.component.css']
 })
 export class BlogComponent {
+  readonly postCount = POSTS.length;
+  readonly firstYear = Math.min(...POSTS.map(post => Number(post.date.slice(0, 4))));
+  readonly latestYear = Math.max(...POSTS.map(post => Number(post.date.slice(0, 4))));
+
   readonly activeTag = signal<string | null>(null);
 
   readonly tags = [...new Set(POSTS.flatMap(post => post.tags))].sort((a, b) =>

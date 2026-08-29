@@ -1,6 +1,5 @@
 import { Component, ChangeDetectionStrategy, effect, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { POSTS } from './blog/posts';
 
 type Theme = 'light' | 'dark';
 
@@ -19,9 +18,6 @@ export class AppComponent {
 
   readonly theme = signal<Theme>(readStoredTheme());
 
-  readonly postCount = POSTS.length;
-  readonly firstYear = Math.min(...POSTS.map(post => Number(post.date.slice(0, 4))));
-  readonly latestYear = Math.max(...POSTS.map(post => Number(post.date.slice(0, 4))));
   readonly currentYear = new Date().getFullYear();
 
   constructor() {

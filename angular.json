@@ -29,6 +29,10 @@
             "assets": [
               "src/favicon.ico",
               "src/favicon.svg",
+              "src/manifest.webmanifest",
+              "src/icon-192.png",
+              "src/icon-512.png",
+              "src/apple-touch-icon.png",
               "src/assets"
             ],
             "styles": [
@@ -105,6 +109,10 @@
             "assets": [
               "src/favicon.ico",
               "src/favicon.svg",
+              "src/manifest.webmanifest",
+              "src/icon-192.png",
+              "src/icon-512.png",
+              "src/apple-touch-icon.png",
               "src/assets"
             ],
             "styles": [
