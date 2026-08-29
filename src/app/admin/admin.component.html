@@ -1,0 +1,197 @@
+@if (!hasToken()) {
+  <section class="gate">
+    <h1>Editor</h1>
+    <p class="gate__lede">
+      Paste a fine-grained GitHub token with <strong>Contents: read and write</strong> on
+      <code>dough-blog</code> and <code>dough-blog-drafts</code>. It stays in this browser.
+    </p>
+    <label class="field">
+      <span class="field__label">Token</span>
+      <input
+        type="password"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        placeholder="github_pat_…"
+        [value]="tokenInput()"
+        (input)="tokenInput.set(value($event))"
+        (keydown.enter)="saveToken()"
+      />
+    </label>
+    <button
+      type="button"
+      class="btn btn--primary"
+      [disabled]="!tokenInput().trim() || checkingToken()"
+      (click)="saveToken()"
+    >
+      {{ checkingToken() ? 'Checking…' : 'Save token' }}
+    </button>
+    @if (status().kind === 'error') {
+      <p class="status status--error">{{ status().text }}</p>
+    }
+  </section>
+} @else {
+  <header class="bar">
+    <h1>Editor</h1>
+    <div class="bar__right">
+      @if (view() === 'edit') {
+        <button type="button" class="linkish" (click)="backToList()">All drafts</button>
+      }
+      <button type="button" class="linkish" (click)="forgetToken()">Forget token</button>
+    </div>
+  </header>
+
+  @if (status().kind !== 'idle') {
+    <p class="status" [class.status--error]="status().kind === 'error'">
+      {{ status().text }}
+      @if (status().href) {
+        <a [href]="status().href" target="_blank" rel="noopener noreferrer">Watch the build</a>
+      }
+    </p>
+  }
+
+  @if (view() === 'list') {
+    <div class="list-head">
+      <button type="button" class="btn btn--primary" (click)="startNew()">New post</button>
+      <button type="button" class="btn" [disabled]="loadingDrafts()" (click)="refresh()">
+        {{ loadingDrafts() ? 'Loading…' : 'Refresh' }}
+      </button>
+    </div>
+
+    @if (loadingDrafts() && drafts().length === 0) {
+      <p class="muted">Fetching drafts…</p>
+    } @else if (drafts().length === 0) {
+      <p class="empty">
+        No drafts waiting. Anything you save from <a href="/capture">capture</a> shows up here.
+      </p>
+    } @else {
+      <ul class="drafts">
+        @for (draft of drafts(); track draft.id) {
+          <li>
+            <button type="button" class="draft" (click)="open(draft)">
+              <span class="draft__title">{{ summarise(draft) }}</span>
+              <span class="draft__meta">
+                {{ draft.date }}
+                @if (draft.tags.length) {
+                  · {{ draft.tags.join(', ') }}
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  @if (view() === 'edit' && editing(); as draft) {
+    <div class="editor">
+      <div class="pane">
+        <label class="field">
+          <span class="field__label">Title</span>
+          <input
+            type="text"
+            [value]="draft.title"
+            (input)="setTitle(value($event))"
+            placeholder="Untitled"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Date</span>
+          <input type="date" [value]="draft.date" (input)="setDate(value($event))" />
+        </label>
+
+        <div class="field">
+          <span class="field__label">Tags</span>
+          <div class="tags__row">
+            @for (tag of knownTags; track tag) {
+              <button
+                type="button"
+                class="chip"
+                [class.chip--on]="draft.tags.includes(tag)"
+                [attr.aria-pressed]="draft.tags.includes(tag)"
+                (click)="toggleTag(tag)"
+              >
+                {{ tag }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Body <em>— blank line starts a paragraph</em></span>
+          <textarea
+            [value]="draft.body"
+            (input)="setBody(value($event))"
+            autocapitalize="sentences"
+            spellcheck="true"
+          ></textarea>
+        </label>
+
+        @if (slugPreview()) {
+          <p class="muted">Will publish at <code>/{{ slugPreview() }}</code></p>
+        }
+      </div>
+
+      <div class="pane pane--preview">
+        <p class="field__label">Preview</p>
+        @if (preview(); as post) {
+          <app-post-card [post]="post" [interactive]="false" />
+        }
+      </div>
+    </div>
+
+    @if (confirming()) {
+      <div class="confirm">
+        <h2>Publish this post?</h2>
+        <p>It goes live in about a minute and the draft is removed.</p>
+        @if (problems().length) {
+          <ul class="problems">
+            @for (problem of problems(); track problem) {
+              <li>{{ problem }}</li>
+            }
+          </ul>
+        }
+        <div class="row">
+          <button type="button" class="btn" (click)="confirming.set(false)">Back</button>
+          <button
+            type="button"
+            class="btn btn--danger"
+            [disabled]="problems().length > 0 || status().kind === 'working'"
+            (click)="confirmPublish()"
+          >
+            Publish
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="row row--actions">
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="status().kind === 'working'"
+        (click)="saveChanges()"
+      >
+        Save draft
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [disabled]="confirming() || status().kind === 'working'"
+        (click)="confirming.set(true)"
+      >
+        Publish
+      </button>
+      <button
+        type="button"
+        class="btn btn--quiet"
+        [disabled]="status().kind === 'working'"
+        (click)="discard()"
+      >
+        Discard
+      </button>
+    </div>
+  }
+}

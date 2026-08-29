@@ -8,5 +8,9 @@ export const routes: Routes = [
     path: 'capture',
     loadComponent: () => import('./capture/capture.component').then(m => m.CaptureComponent)
   },
+  {
+    path: 'admin',
+    loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent)
+  },
   { path: '**', redirectTo: '' }
 ];

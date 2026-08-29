@@ -1,17 +1,17 @@
 import { Component, ChangeDetectionStrategy, computed, signal } from '@angular/core';
 import { POSTS, Post } from './posts';
+import { PostCardComponent } from './post-card.component';
+import { formatDate, readingTime } from './post-format';
 
 interface YearGroup {
   year: number;
   posts: Post[];
 }
 
-const WORDS_PER_MINUTE = 220;
-
 @Component({
   selector: 'app-blog',
   standalone: true,
-  imports: [],
+  imports: [PostCardComponent],
   templateUrl: './blog.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./blog.component.css']
@@ -59,21 +59,6 @@ export class BlogComponent {
     this.activeTag.set(null);
   }
 
-  /** Renders the ISO date as e.g. "August 29, 2026" without pulling in a locale pipe. */
-  formatDate(iso: string): string {
-    const [year, month, day] = iso.split('-').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
-
-  readingTime(post: Post): number {
-    const words = post.body.reduce(
-      (total, paragraph) => total + paragraph.split(/\s+/).length,
-      0
-    );
-    return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
-  }
+  readonly formatDate = formatDate;
+  readonly readingTime = readingTime;
 }

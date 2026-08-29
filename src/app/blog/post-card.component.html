@@ -1,0 +1,33 @@
+<article class="post" [id]="post.slug">
+  <header class="post__header">
+    <h3 class="post__title">{{ post.title }}</h3>
+    <p class="post__meta">
+      <time [attr.datetime]="post.date">{{ formatDate(post.date) }}</time>
+      <span class="post__dot" aria-hidden="true">•</span>
+      <span>{{ readingTime(post) }} min read</span>
+    </p>
+  </header>
+
+  <div class="post__body">
+    @for (paragraph of post.body; track $index) {
+      <p>{{ paragraph }}</p>
+    }
+  </div>
+
+  <footer class="post__tags">
+    @for (tag of post.tags; track tag) {
+      @if (interactive) {
+        <button
+          type="button"
+          class="tag"
+          [class.tag--active]="activeTag === tag"
+          (click)="tagSelected.emit(tag)"
+        >
+          #{{ tag }}
+        </button>
+      } @else {
+        <span class="tag">#{{ tag }}</span>
+      }
+    }
+  </footer>
+</article>

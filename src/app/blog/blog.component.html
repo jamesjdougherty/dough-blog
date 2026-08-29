@@ -58,35 +58,11 @@
       <h2 class="year-heading"><span>{{ group.year }}</span></h2>
 
       @for (post of group.posts; track post.slug) {
-        <article class="post" [id]="post.slug">
-          <header class="post__header">
-            <h3 class="post__title">{{ post.title }}</h3>
-            <p class="post__meta">
-              <time [attr.datetime]="post.date">{{ formatDate(post.date) }}</time>
-              <span class="post__dot" aria-hidden="true">•</span>
-              <span>{{ readingTime(post) }} min read</span>
-            </p>
-          </header>
-
-          <div class="post__body">
-            @for (paragraph of post.body; track $index) {
-              <p>{{ paragraph }}</p>
-            }
-          </div>
-
-          <footer class="post__tags">
-            @for (tag of post.tags; track tag) {
-              <button
-                type="button"
-                class="tag"
-                [class.tag--active]="activeTag() === tag"
-                (click)="toggleTag(tag)"
-              >
-                #{{ tag }}
-              </button>
-            }
-          </footer>
-        </article>
+        <app-post-card
+          [post]="post"
+          [activeTag]="activeTag()"
+          (tagSelected)="toggleTag($event)"
+        />
       }
     </section>
   } @empty {
