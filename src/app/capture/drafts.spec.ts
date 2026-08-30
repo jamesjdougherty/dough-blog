@@ -3,6 +3,8 @@ import {
   Draft,
   draftId,
   draftPath,
+  draftToExistingPost,
+  postToDraft,
   slugify,
   toParagraphs,
   today,
@@ -105,6 +107,43 @@ describe('draftToPost', () => {
   it('drops blank tags', () => {
     const post = draftToPost(draft({ tags: ['Musings', '  '] }), []);
     expect(post.tags).toEqual(['Musings']);
+  });
+});
+
+describe('editing a published post', () => {
+  it('round-trips a real post through the editor without changing it', () => {
+    for (const post of POSTS) {
+      expect(draftToExistingPost(postToDraft(post), post.slug)).toEqual(post);
+    }
+  });
+
+  it('keeps the published slug even when the title changes', () => {
+    const edited = { ...postToDraft(POSTS[0]), title: 'A Completely Different Title' };
+    const post = draftToExistingPost(edited, POSTS[0].slug);
+
+    expect(post.slug).toEqual(POSTS[0].slug);
+    expect(post.title).toEqual('A Completely Different Title');
+  });
+
+  it('keeps the slug even when the new title would not produce one', () => {
+    const edited = { ...postToDraft(POSTS[0]), title: '!!!' };
+    expect(draftToExistingPost(edited, POSTS[0].slug).slug).toEqual(POSTS[0].slug);
+  });
+
+  it('re-splits an edited body into paragraphs', () => {
+    const edited = { ...postToDraft(POSTS[0]), body: 'One.\n\nTwo.\n\nThree.' };
+    expect(draftToExistingPost(edited, POSTS[0].slug).body).toEqual(['One.', 'Two.', 'Three.']);
+  });
+
+  it('produces a post that still satisfies the content rules', () => {
+    const post = draftToExistingPost(postToDraft(POSTS[0]), POSTS[0].slug);
+
+    expect(post.slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    expect(post.title.trim().length).toBeGreaterThan(0);
+    expect(post.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(post.tags.length).toBeGreaterThan(0);
+    expect(post.body.length).toBeGreaterThan(0);
+    expect(Object.keys(post).sort()).toEqual(['body', 'date', 'slug', 'tags', 'title']);
   });
 });
 

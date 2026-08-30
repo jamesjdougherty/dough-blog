@@ -4,15 +4,20 @@ import { PostCardComponent } from '../blog/post-card.component';
 import {
   Draft,
   deleteDraft,
+  deletePost,
   draftId,
+  draftToExistingPost,
   draftToPost,
   listDrafts,
+  listPosts,
+  postToDraft,
   publish,
   saveDraft,
   slugify,
   today,
   toParagraphs,
   uniqueSlug,
+  updatePost,
   validateForPublish
 } from '../capture/drafts';
 import {
@@ -26,7 +31,11 @@ import {
 } from '../capture/github';
 
 type View = 'list' | 'edit';
+type Tab = 'drafts' | 'published';
 type Status = { kind: 'idle' | 'working' | 'ok' | 'error'; text: string; href?: string };
+
+/** What `editing` currently holds: an unpublished draft, or a post already live. */
+type Editing = { draft: Draft; slug: string | null };
 
 const EDIT_KEY = 'dough-admin-editing';
 
@@ -51,20 +60,39 @@ export class AdminComponent {
   });
 
   readonly view = signal<View>('list');
+  readonly tab = signal<Tab>('drafts');
   readonly drafts = signal<Draft[]>([]);
   readonly loadingDrafts = signal(false);
   readonly status = signal<Status>({ kind: 'idle', text: '' });
   readonly confirming = signal(false);
+  readonly confirmingDelete = signal(false);
 
   /** The draft being edited. Null until New post or a list row opens one. */
   readonly editing = signal<Draft | null>(null);
   readonly isNew = signal(false);
 
-  readonly knownTags = [...new Set(POSTS.flatMap(post => post.tags))].sort((a, b) =>
-    a.localeCompare(b)
-  );
+  /**
+   * The slug this edit belongs to when a *published* post is open, null for a draft. Set
+   * only through `open()`, so the two signals cannot drift apart.
+   */
+  readonly editingSlug = signal<string | null>(null);
 
-  private readonly existingSlugs = POSTS.map(post => post.slug);
+  /** The live posts as read from the repository. Empty until fetched. */
+  readonly posts = signal<Post[]>([]);
+  readonly loadingPosts = signal(false);
+
+  /**
+   * Tags to offer as chips. The fetched posts are the truth, but the bundled snapshot is a
+   * reasonable stand-in before the first fetch lands, and identical in the common case.
+   */
+  readonly knownTags = computed(() => {
+    const source = this.posts().length ? this.posts() : POSTS;
+    return [...new Set(source.flatMap(post => post.tags))].sort((a, b) => a.localeCompare(b));
+  });
+
+  private readonly existingSlugs = computed(() =>
+    (this.posts().length ? this.posts() : POSTS).map(post => post.slug)
+  );
 
   /** The post exactly as it would be committed, so the preview cannot drift from reality. */
   readonly preview = computed<Post | null>(() => {
@@ -72,7 +100,10 @@ export class AdminComponent {
     if (!draft) {
       return null;
     }
-    const post = draftToPost(draft, this.existingSlugs);
+    const slug = this.editingSlug();
+    const post = slug
+      ? draftToExistingPost(draft, slug)
+      : draftToPost(draft, this.existingSlugs());
     return post.body.length ? post : { ...post, body: ['…'] };
   });
 
@@ -86,8 +117,13 @@ export class AdminComponent {
     if (!draft) {
       return '';
     }
+    // A published post keeps the slug it has; only a draft is still choosing one.
+    const slug = this.editingSlug();
+    if (slug) {
+      return slug;
+    }
     const base = slugify(draft.title);
-    return base ? uniqueSlug(base, this.existingSlugs) : '';
+    return base ? uniqueSlug(base, this.existingSlugs()) : '';
   });
 
   constructor() {
@@ -96,7 +132,8 @@ export class AdminComponent {
     }
     const resumed = restoreEditing();
     if (resumed) {
-      this.editing.set(resumed);
+      this.editing.set(resumed.draft);
+      this.editingSlug.set(resumed.slug);
       this.view.set('edit');
     }
   }
@@ -162,6 +199,27 @@ export class AdminComponent {
     }
   }
 
+  async refreshPosts(): Promise<void> {
+    this.loadingPosts.set(true);
+    try {
+      this.posts.set(await listPosts());
+      this.status.set({ kind: 'idle', text: '' });
+    } catch (error) {
+      this.status.set({ kind: 'error', text: describe(error) });
+      this.syncToken();
+    } finally {
+      this.loadingPosts.set(false);
+    }
+  }
+
+  /** Fetches the published list the first time that tab is opened, then on demand. */
+  showTab(tab: Tab): void {
+    this.tab.set(tab);
+    if (tab === 'published' && this.posts().length === 0 && !this.loadingPosts()) {
+      void this.refreshPosts();
+    }
+  }
+
   startNew(): void {
     const now = new Date().toISOString();
     this.open(
@@ -171,20 +229,33 @@ export class AdminComponent {
   }
 
   open(draft: Draft, isNew = false): void {
-    this.editing.set(draft);
+    this.openEditing({ draft, slug: null }, isNew);
+  }
+
+  /** Opens a post that is already live. Its slug is carried along and never recomputed. */
+  openPost(post: Post): void {
+    this.openEditing({ draft: postToDraft(post), slug: post.slug }, false);
+  }
+
+  private openEditing(editing: Editing, isNew: boolean): void {
+    this.editing.set(editing.draft);
+    this.editingSlug.set(editing.slug);
     this.isNew.set(isNew);
     this.view.set('edit');
     this.confirming.set(false);
+    this.confirmingDelete.set(false);
     this.status.set({ kind: 'idle', text: '' });
-    rememberEditing(draft);
+    rememberEditing(editing);
   }
 
   backToList(): void {
     this.editing.set(null);
+    this.editingSlug.set(null);
     this.confirming.set(false);
+    this.confirmingDelete.set(false);
     this.view.set('list');
     forgetEditing();
-    void this.refresh();
+    void (this.tab() === 'published' ? this.refreshPosts() : this.refresh());
   }
 
   /** First non-empty line, for the list row. */
@@ -204,7 +275,7 @@ export class AdminComponent {
         return draft;
       }
       const next = { ...draft, ...change };
-      rememberEditing(next);
+      rememberEditing({ draft: next, slug: this.editingSlug() });
       return next;
     });
   }
@@ -240,11 +311,49 @@ export class AdminComponent {
     if (!draft) {
       return;
     }
+    const slug = this.editingSlug();
     this.status.set({ kind: 'working', text: 'Saving…' });
     try {
-      await saveDraft(draft);
-      this.isNew.set(false);
-      this.status.set({ kind: 'ok', text: 'Draft saved.' });
+      if (slug) {
+        // Editing something already live: this commit deploys.
+        const post = await updatePost(slug, draft);
+        this.posts.update(posts => posts.map(item => (item.slug === slug ? post : item)));
+        this.status.set({
+          kind: 'ok',
+          text: `Updated "${post.title}". Live in about a minute.`,
+          href: 'https://github.com/jamesjdougherty/dough-blog/actions'
+        });
+      } else {
+        await saveDraft(draft);
+        this.isNew.set(false);
+        this.status.set({ kind: 'ok', text: 'Draft saved.' });
+      }
+    } catch (error) {
+      this.status.set({ kind: 'error', text: describe(error) });
+      this.syncToken();
+    }
+  }
+
+  /** Removes a post that is already live. The only way to unpublish. */
+  async confirmDeletePost(): Promise<void> {
+    const slug = this.editingSlug();
+    if (!slug) {
+      return;
+    }
+    this.status.set({ kind: 'working', text: 'Removing…' });
+    try {
+      const post = await deletePost(slug);
+      this.posts.update(posts => posts.filter(item => item.slug !== slug));
+      forgetEditing();
+      this.editing.set(null);
+      this.editingSlug.set(null);
+      this.confirmingDelete.set(false);
+      this.view.set('list');
+      this.status.set({
+        kind: 'ok',
+        text: `Removed "${post.title}". Gone from the site in about a minute.`,
+        href: 'https://github.com/jamesjdougherty/dough-blog/actions'
+      });
     } catch (error) {
       this.status.set({ kind: 'error', text: describe(error) });
       this.syncToken();
@@ -263,6 +372,7 @@ export class AdminComponent {
       }
       forgetEditing();
       this.editing.set(null);
+      this.editingSlug.set(null);
       this.view.set('list');
       this.status.set({ kind: 'ok', text: 'Draft discarded.' });
       await this.refresh();
@@ -295,8 +405,11 @@ export class AdminComponent {
       }
       forgetEditing();
       this.editing.set(null);
+      this.editingSlug.set(null);
       this.confirming.set(false);
       this.view.set('list');
+      // Keep the published list honest if it has been loaded; publish puts it at the front.
+      this.posts.update(posts => (posts.length ? [post, ...posts] : posts));
       this.status.set({
         kind: 'ok',
         text: `Published "${post.title}". Live in about a minute.${note}`,
@@ -310,18 +423,27 @@ export class AdminComponent {
   }
 }
 
-function rememberEditing(draft: Draft): void {
+function rememberEditing(editing: Editing): void {
   try {
-    localStorage.setItem(EDIT_KEY, JSON.stringify(draft));
+    localStorage.setItem(EDIT_KEY, JSON.stringify(editing));
   } catch {
     /* The draft is still on screen. */
   }
 }
 
-function restoreEditing(): Draft | null {
+/**
+ * Restores an interrupted edit. Entries written before published posts were editable are
+ * a bare `Draft` rather than an `Editing`, so treat anything without a `draft` key as a
+ * draft with no slug — otherwise an edit open across this deploy comes back empty.
+ */
+function restoreEditing(): Editing | null {
   try {
     const raw = localStorage.getItem(EDIT_KEY);
-    return raw ? (JSON.parse(raw) as Draft) : null;
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as Editing | Draft;
+    return 'draft' in parsed ? parsed : { draft: parsed, slug: null };
   } catch {
     return null;
   }
