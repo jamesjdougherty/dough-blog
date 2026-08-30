@@ -99,11 +99,21 @@
   gap: 2.75rem;
 }
 
+/*
+ * Cards are spaced from here rather than by a margin on the card itself: the card is the
+ * only child of its <app-post-card> host, so a `:last-child` rule inside the component
+ * matches every card and cannot separate siblings.
+ */
+.year-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 .year-heading {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.25rem;
   color: var(--text-muted);
   font-family: var(--font-serif);
   font-size: 0.95rem;
