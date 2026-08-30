@@ -36,7 +36,9 @@
     <h1>Editor</h1>
     <div class="bar__right">
       @if (view() === 'edit') {
-        <button type="button" class="linkish" (click)="backToList()">All drafts</button>
+        <button type="button" class="linkish" (click)="backToList()">
+          {{ editingSlug() ? 'All posts' : 'All drafts' }}
+        </button>
       }
       @if (tokenStale()) {
         <span
@@ -59,35 +61,98 @@
   }
 
   @if (view() === 'list') {
-    <div class="list-head">
-      <button type="button" class="btn btn--primary" (click)="startNew()">New post</button>
-      <button type="button" class="btn" [disabled]="loadingDrafts()" (click)="refresh()">
-        {{ loadingDrafts() ? 'Loading…' : 'Refresh' }}
+    <div class="tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab--on]="tab() === 'drafts'"
+        [attr.aria-selected]="tab() === 'drafts'"
+        (click)="showTab('drafts')"
+      >
+        Drafts
+        @if (drafts().length) {
+          <span class="tab__count">{{ drafts().length }}</span>
+        }
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab--on]="tab() === 'published'"
+        [attr.aria-selected]="tab() === 'published'"
+        (click)="showTab('published')"
+      >
+        Published
+        @if (posts().length) {
+          <span class="tab__count">{{ posts().length }}</span>
+        }
       </button>
     </div>
 
-    @if (loadingDrafts() && drafts().length === 0) {
-      <p class="muted">Fetching drafts…</p>
-    } @else if (drafts().length === 0) {
-      <p class="empty">
-        No drafts waiting. Anything you save from <a href="/capture">capture</a> shows up here.
-      </p>
+    @if (tab() === 'drafts') {
+      <div class="list-head">
+        <button type="button" class="btn btn--primary" (click)="startNew()">New post</button>
+        <button type="button" class="btn" [disabled]="loadingDrafts()" (click)="refresh()">
+          {{ loadingDrafts() ? 'Loading…' : 'Refresh' }}
+        </button>
+      </div>
+
+      @if (loadingDrafts() && drafts().length === 0) {
+        <p class="muted">Fetching drafts…</p>
+      } @else if (drafts().length === 0) {
+        <p class="empty">
+          No drafts waiting. Anything you save from <a href="/capture">capture</a> shows up here.
+        </p>
+      } @else {
+        <ul class="drafts">
+          @for (draft of drafts(); track draft.id) {
+            <li>
+              <button type="button" class="draft" (click)="open(draft)">
+                <span class="draft__title">{{ summarise(draft) }}</span>
+                <span class="draft__meta">
+                  {{ draft.date }}
+                  @if (draft.tags.length) {
+                    · {{ draft.tags.join(', ') }}
+                  }
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     } @else {
-      <ul class="drafts">
-        @for (draft of drafts(); track draft.id) {
-          <li>
-            <button type="button" class="draft" (click)="open(draft)">
-              <span class="draft__title">{{ summarise(draft) }}</span>
-              <span class="draft__meta">
-                {{ draft.date }}
-                @if (draft.tags.length) {
-                  · {{ draft.tags.join(', ') }}
-                }
-              </span>
-            </button>
-          </li>
-        }
-      </ul>
+      <div class="list-head">
+        <p class="muted">
+          Editing or removing anything here changes the live site.
+        </p>
+        <button type="button" class="btn" [disabled]="loadingPosts()" (click)="refreshPosts()">
+          {{ loadingPosts() ? 'Loading…' : 'Refresh' }}
+        </button>
+      </div>
+
+      @if (loadingPosts() && posts().length === 0) {
+        <p class="muted">Fetching published posts…</p>
+      } @else if (posts().length === 0) {
+        <p class="empty">Nothing published yet.</p>
+      } @else {
+        <ul class="drafts">
+          @for (post of posts(); track post.slug) {
+            <li>
+              <button type="button" class="draft" (click)="openPost(post)">
+                <span class="draft__title">{{ post.title }}</span>
+                <span class="draft__meta">
+                  {{ post.date }}
+                  @if (post.tags.length) {
+                    · {{ post.tags.join(', ') }}
+                  }
+                  · <code>/{{ post.slug }}</code>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     }
   }
 
@@ -112,7 +177,7 @@
         <div class="field">
           <span class="field__label">Tags</span>
           <div class="tags__row">
-            @for (tag of knownTags; track tag) {
+            @for (tag of knownTags(); track tag) {
               <button
                 type="button"
                 class="chip"
@@ -137,7 +202,14 @@
         </label>
 
         @if (slugPreview()) {
-          <p class="muted">Will publish at <code>/{{ slugPreview() }}</code></p>
+          @if (editingSlug()) {
+            <p class="muted">
+              Lives at <code>/{{ slugPreview() }}</code> — the link is fixed, so retitling
+              will not move it.
+            </p>
+          } @else {
+            <p class="muted">Will publish at <code>/{{ slugPreview() }}</code></p>
+          }
         }
       </div>
 
@@ -174,31 +246,79 @@
       </div>
     }
 
+    @if (confirmingDelete()) {
+      <div class="confirm">
+        <h2>Remove this post from the site?</h2>
+        <p>
+          <code>/{{ editingSlug() }}</code> stops existing in about a minute, and anything
+          linking to it breaks. The text is recoverable from the repository's history, but
+          not from here.
+        </p>
+        <div class="row">
+          <button type="button" class="btn" (click)="confirmingDelete.set(false)">Back</button>
+          <button
+            type="button"
+            class="btn btn--danger"
+            [disabled]="status().kind === 'working'"
+            (click)="confirmDeletePost()"
+          >
+            Remove post
+          </button>
+        </div>
+      </div>
+    }
+
     <div class="row row--actions">
-      <button
-        type="button"
-        class="btn btn--primary"
-        [disabled]="status().kind === 'working'"
-        (click)="saveChanges()"
-      >
-        Save draft
-      </button>
-      <button
-        type="button"
-        class="btn"
-        [disabled]="confirming() || status().kind === 'working'"
-        (click)="confirming.set(true)"
-      >
-        Publish
-      </button>
-      <button
-        type="button"
-        class="btn btn--quiet"
-        [disabled]="status().kind === 'working'"
-        (click)="discard()"
-      >
-        Discard
-      </button>
+      @if (editingSlug()) {
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="problems().length > 0 || status().kind === 'working'"
+          (click)="saveChanges()"
+        >
+          Save changes
+        </button>
+        <button
+          type="button"
+          class="btn btn--quiet"
+          [disabled]="confirmingDelete() || status().kind === 'working'"
+          (click)="confirmingDelete.set(true)"
+        >
+          Remove post
+        </button>
+        @if (problems().length) {
+          <ul class="problems">
+            @for (problem of problems(); track problem) {
+              <li>{{ problem }}</li>
+            }
+          </ul>
+        }
+      } @else {
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="status().kind === 'working'"
+          (click)="saveChanges()"
+        >
+          Save draft
+        </button>
+        <button
+          type="button"
+          class="btn"
+          [disabled]="confirming() || status().kind === 'working'"
+          (click)="confirming.set(true)"
+        >
+          Publish
+        </button>
+        <button
+          type="button"
+          class="btn btn--quiet"
+          [disabled]="status().kind === 'working'"
+          (click)="discard()"
+        >
+          Discard
+        </button>
+      }
     </div>
   }
 }

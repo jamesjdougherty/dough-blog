@@ -106,8 +106,45 @@ textarea:focus-visible {
 
 /* ---- draft list ---- */
 
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.tab--on {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.tab__count {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
 .list-head {
   display: flex;
+  align-items: center;
   gap: 0.6rem;
   margin-bottom: 1.5rem;
 }
@@ -115,6 +152,12 @@ textarea:focus-visible {
 .list-head .btn {
   flex: 0 0 auto;
   min-width: 8rem;
+}
+
+/* The warning sits where New post does on the drafts tab; let it take the slack. */
+.list-head .muted {
+  flex: 1 1 auto;
+  margin: 0;
 }
 
 .drafts {

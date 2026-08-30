@@ -3,6 +3,7 @@ import {
   BLOG_REPO,
   DRAFTS_DIR,
   DRAFTS_REPO,
+  GitHubError,
   POSTS_PATH,
   deleteFile,
   listDir,
@@ -187,31 +188,118 @@ export async function deleteDraft(id: string): Promise<void> {
 }
 
 /**
- * Read posts.json, put the new post at the front, write it back. Retries once on a
- * conflict, which is what a stale sha looks like when something else committed first.
+ * Read posts.json, apply a change to it, write it back. Retries once on a conflict, which
+ * is what a stale sha looks like when something else committed first — the change runs
+ * again against the newly read file rather than being replayed onto stale content.
+ *
+ * A change that throws (a post that is no longer there) is not a conflict and is not
+ * retried.
  */
-export async function publish(draft: Draft): Promise<Post> {
+async function commitPosts<T>(
+  change: (posts: Post[]) => { posts: Post[]; message: string; result: T }
+): Promise<T> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const file = await readFile(BLOG_REPO, POSTS_PATH);
-    const posts = JSON.parse(file.text) as Post[];
-    const post = draftToPost(draft, posts.map(item => item.slug));
+    const { posts, message, result } = change(JSON.parse(file.text) as Post[]);
 
     try {
       await writeFile(
         BLOG_REPO,
         POSTS_PATH,
-        JSON.stringify([post, ...posts], null, 2) + '\n',
-        `Add post: ${post.title}`,
+        JSON.stringify(posts, null, 2) + '\n',
+        message,
         file.sha
       );
-      return post;
+      return result;
     } catch (error) {
-      const conflict =
-        error instanceof Error && 'status' in error && (error as { status: number }).status === 409;
-      if (!conflict || attempt === 1) {
+      if (!(error instanceof GitHubError && error.status === 409) || attempt === 1) {
         throw error;
       }
     }
   }
-  throw new Error('Could not publish after a retry.');
+  throw new Error('Could not write posts.json after a retry.');
+}
+
+export async function publish(draft: Draft): Promise<Post> {
+  return commitPosts(posts => {
+    const post = draftToPost(
+      draft,
+      posts.map(item => item.slug)
+    );
+    return { posts: [post, ...posts], message: `Add post: ${post.title}`, result: post };
+  });
+}
+
+/* ---------- published posts ---------- */
+
+/**
+ * The live posts, read from the repository rather than the bundled `POSTS`.
+ *
+ * `POSTS` is compiled in at build time, so an `/admin` page served from an older deploy
+ * would list stale content and — far worse — write back a `posts.json` missing everything
+ * published since that build. Always read before writing.
+ */
+export async function listPosts(): Promise<Post[]> {
+  const file = await readFile(BLOG_REPO, POSTS_PATH);
+  return JSON.parse(file.text) as Post[];
+}
+
+/** Published post to the editor's shape; paragraphs become the blank-line-separated text. */
+export function postToDraft(post: Post): Draft {
+  return {
+    id: post.slug,
+    createdAt: post.date,
+    updatedAt: post.date,
+    title: post.title,
+    body: post.body.join('\n\n'),
+    tags: [...post.tags],
+    date: post.date
+  };
+}
+
+/**
+ * Back to a post, keeping the slug it was published under.
+ *
+ * A published post keeps its slug for life: it is the live URL, and rewriting it because
+ * the title was tweaked would break every inbound link and leave the old address dead.
+ * Only title, date, tags and body are editable.
+ */
+export function draftToExistingPost(draft: Draft, slug: string): Post {
+  return {
+    slug,
+    title: draft.title.trim(),
+    date: draft.date,
+    tags: draft.tags.map(tag => tag.trim()).filter(Boolean),
+    body: toParagraphs(draft.body)
+  };
+}
+
+const GONE = 'That post is no longer in posts.json. Refresh the list.';
+
+/** Replaces the post in place, so editing one never reorders the feed. */
+export async function updatePost(slug: string, draft: Draft): Promise<Post> {
+  return commitPosts(posts => {
+    const index = posts.findIndex(item => item.slug === slug);
+    if (index === -1) {
+      throw new Error(GONE);
+    }
+    const post = draftToExistingPost(draft, slug);
+    const next = [...posts];
+    next[index] = post;
+    return { posts: next, message: `Update post: ${post.title}`, result: post };
+  });
+}
+
+export async function deletePost(slug: string): Promise<Post> {
+  return commitPosts(posts => {
+    const post = posts.find(item => item.slug === slug);
+    if (!post) {
+      throw new Error(GONE);
+    }
+    return {
+      posts: posts.filter(item => item.slug !== slug),
+      message: `Remove post: ${post.title}`,
+      result: post
+    };
+  });
 }
